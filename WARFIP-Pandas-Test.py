@@ -30,16 +30,10 @@ final_read_csv = pd.read_csv('Project Pull For Sort.csv')
 
 player_name_input = input('Input player full name.')
 
+test_1 = pd.read_csv('Project Pull For Sort.csv', index_col='Name')
+test_person = test_1.loc[[player_name_input]]
 
-def fxn_player_name(player_name_input):
-    player = {}
-    for name in range(len(new_csv_total.Name)):
-        if player_name_input == new_csv_total.Name[name]:
-            df = pd.DataFrame(final_read_csv)
-            player_name_index = df[df['Name'] == player_name_input].index.values
-            player.update(dict(new_csv_total.loc[player_name_index].items()))
-    return player
+print(test_person)
 
-player_dictionary = fxn_player_name(player_name_input)
-print(player_dictionary.values())
-
+num_PA = test_person['PA']
+print(num_PA)
