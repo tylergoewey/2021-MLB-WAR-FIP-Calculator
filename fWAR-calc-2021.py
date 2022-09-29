@@ -1,6 +1,7 @@
+import numpy as np
 import pandas as pd
 
-player_name_input = input('Input player full name.')
+player_name_input = input('Input player full name.').title()
 
 player_finder = pd.read_csv('Fill NaN for Final.csv', index_col='Name')
 player_finder_rework = player_finder.infer_objects().dtypes
@@ -93,35 +94,35 @@ def fld_runs(num_frm=num_frm, num_rSB=num_rSB, UZR_1B=UZR_1B, UZR_2B=UZR_2B, UZR
     num_fld_runs = total_UZR + num_frm + num_rSB
     return num_fld_runs
 
-#player pos_adj numbers
-innings_1B = player_info['num_innings_1B']
-innings_2B = player_info['num_innings_2B']
-innings_3B = player_info['num_innings_3B']
-innings_SS = player_info['num_innings_SS']
-innings_LF = player_info['num_innings_LF']
-innings_CF = player_info['num_innings_CF']
-innings_RF = player_info['num_innings_RF']
-num_DH_PA = player_info['PA_DH']
+#player pos_adj raw numbers
+raw_innings_1B = player_info['num_innings_1B'].astype(int, errors='ignore')
+raw_innings_2B = player_info['num_innings_2B'].astype(int, errors='ignore')
+raw_innings_3B = player_info['num_innings_3B'].astype(int, errors='ignore')
+raw_innings_SS = player_info['num_innings_SS'].astype(int, errors='ignore')
+raw_innings_LF = player_info['num_innings_LF'].astype(int, errors='ignore')
+raw_innings_CF = player_info['num_innings_CF'].astype(int, errors='ignore')
+raw_innings_RF = player_info['num_innings_RF'].astype(int, errors='ignore')
+raw_num_DH_PA = player_info['PA_DH'].astype(int, errors='ignore')
 
-def pos_adj(innings_1B=innings_1B, innings_2B=innings_2B, innings_3B=innings_3B, innings_SS=innings_SS,
-            innings_LF=innings_LF, innings_CF=innings_CF, innings_RF=innings_RF, num_DH_PA=num_DH_PA):
+nu_innings_1B = raw_innings_1B.to_numpy()
+nu_innings_2B = raw_innings_2B.to_numpy()
+nu_innings_3B = raw_innings_3B.to_numpy()
+nu_innings_SS = raw_innings_SS.to_numpy()
+nu_innings_LF = raw_innings_LF.to_numpy()
+nu_innings_CF = raw_innings_CF.to_numpy()
+nu_innings_RF = raw_innings_RF.to_numpy()
+nu_num_DH_PA = raw_num_DH_PA.to_numpy()
+
+def pos_adj(nu_innings_1B=nu_innings_1B):
     num_pos_adj = 0
-    if innings_1B > 0:
-        num_pos_adj += ((innings_1B / 9) * -12.5)
-    elif innings_2B > 0:
-        num_pos_adj += ((innings_2B / 9) * -12.5)
-    elif innings_3B > 0:
-        num_pos_adj += ((innings_3B / 9) * -12.5)
-    elif innings_SS > 0:
-        num_pos_adj += ((innings_SS / 9) * -12.5)
-    elif innings_LF > 0:
-        num_pos_adj += ((innings_LF / 9) * -12.5)
-    elif innings_CF > 0:
-        num_pos_adj += ((innings_CF / 9) * -12.5)
-    elif innings_RF > 0:
-        num_pos_adj += ((innings_RF / 9) * -12.5)
-    elif num_DH_PA > 0:
-        num_pos_adj += ((num_DH_PA / 4.15) / 162)
+    num_pos_adj += (((nu_innings_1B / 9) / 162) * -12.5)
+    num_pos_adj += (((nu_innings_2B / 9) / 162) * -12.5)
+    num_pos_adj += (((nu_innings_3B / 9) / 162) * -12.5)
+    num_pos_adj += (((nu_innings_SS / 9) / 162) * -12.5)
+    num_pos_adj += (((nu_innings_LF / 9) / 162) * -12.5)
+    num_pos_adj += (((nu_innings_CF / 9) / 162) * -12.5)
+    num_pos_adj += (((nu_innings_RF / 9) / 162) * -12.5)
+    num_pos_adj += (((nu_num_DH_PA / 4.15) / 162) * -17.5)
     return num_pos_adj
 
 def lg_adj(num_PA=num_PA, team=team):
@@ -143,18 +144,24 @@ def rep_lvl_runs(num_PA=num_PA):
     num_rep_lvl_runs = ((570 * (2429 / 2430)) * (9.973 / 181817)) * num_PA
     return num_rep_lvl_runs
 
-
-batting_runs = bt_runs()
-baserunning_runs = bsr_runs()
-fielding_runs = fld_runs()
-positional_adjustment = pos_adj()
-league_adjustment = lg_adj()
-replacement_runs = rep_lvl_runs()
+#fWAR calcs
+batting_runs = bt_runs(num_PA, team, player_wOBA)
+baserunning_runs = bsr_runs(player_SB, player_CS, player_1B, player_BB, player_HBP, player_IBB, player_UBR, player_wGDP)
+fielding_runs = fld_runs(num_frm, num_rSB, UZR_1B, UZR_2B, UZR_3B, UZR_SS, UZR_LF, UZR_CF, UZR_RF)
+positional_adjustment = pos_adj(nu_innings_1B)
+league_adjustment = lg_adj(num_PA, team)
+replacement_runs = rep_lvl_runs(num_PA)
 runs_per_win = 9.973
-def fxn_fWAR(batting_runs, baserunning_runs, fielding_runs, positional_adjustment, league_adjustment, replacement_runs, runs_per_win):
-    num_fWAR = (batting_runs + baserunning_runs + fielding_runs + positional_adjustment + league_adjustment + replacement_runs) / runs_per_win
+
+def fxn_fWAR(batting_runs=batting_runs, baserunning_runs=baserunning_runs, fielding_runs=fielding_runs,
+             positional_adjustment=positional_adjustment, league_adjustment=league_adjustment,
+             replacement_runs=replacement_runs, runs_per_win=runs_per_win):
+    num_fWAR = (batting_runs + baserunning_runs + fielding_runs + positional_adjustment +
+                league_adjustment + replacement_runs) / runs_per_win
     return num_fWAR
 
-print(fxn_fWAR())
+fWAR = fxn_fWAR()
+printed_fWAR = fWAR.to_numpy()
+print(str(player_name_input) + ' played for ' + str(team) + ' in 2021 and his fWAR was: ' + str(printed_fWAR) + '.')
 
 
